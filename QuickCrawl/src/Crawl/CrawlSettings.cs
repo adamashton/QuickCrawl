@@ -4,7 +4,9 @@ namespace Crawl
 {
     public class CrawlSettings
     {
-        public Location Start { get; set; }
-        public Location End { get; set; }
+        public Coordinates Start { get; set; }
+        public Coordinates End { get; set; }
+
+        public int Size { get; set; }
     }
 }

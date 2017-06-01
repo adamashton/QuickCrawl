@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -25,13 +26,26 @@ namespace Yelp
             _client = new Lazy<HttpClient>(InitialiseClient);
         }
 
-        public async Task<HttpStatusCode> Search(Location location, int radius)
+        public async Task<SearchResponse> Search(Coordinates coordinates, int radius, List<string> categories, int offset = 0, int limit = 20)
         {
-            string requestUri = $"/v3/businesses/search?latitude={location.Latitude}&longitude={location.Longitude}&radius={radius}";
+            string requestUri = $"/v3/businesses/search?latitude={coordinates.Latitude}&longitude={coordinates.Longitude}&radius={radius}&offset={offset}&limit={limit}";
+
+            if (categories != null && categories.Any())
+            {
+                string categoriesCommaSeparated = string.Join(",", categories);
+                requestUri += "&categories=" + categoriesCommaSeparated;
+            }
 
             HttpClient httpClient = _client.Value;
             HttpResponseMessage httpResponseMessage = await httpClient.GetAsync(requestUri);
-            return httpResponseMessage.StatusCode;
+            
+            if (!httpResponseMessage.IsSuccessStatusCode)
+                await HandleError(httpResponseMessage, "Search failed.");
+
+            string content = await httpResponseMessage.Content.ReadAsStringAsync();
+            SearchResponse searchResponse = JsonConvert.DeserializeObject<SearchResponse>(content);
+
+            return searchResponse;
         }
 
         private HttpClient InitialiseClient()
@@ -70,11 +84,18 @@ namespace Yelp
                 response = await responseMessage.Content.ReadAsStringAsync();
 
                 if (!responseMessage.IsSuccessStatusCode)
-                    throw new Exception($"Failed to obtain auth token. ResponseCode:{responseMessage.StatusCode} Message:{responseMessage}");
+                    await HandleError(responseMessage, "Could not obtain auth token.");
             }
 
             AuthToken authToken = JsonConvert.DeserializeObject<AuthToken>(response);
             return authToken;
+        }
+
+        private async Task HandleError(HttpResponseMessage httpResponseMessage, string message = "Error Response")
+        {
+            var responseContent = await httpResponseMessage.Content.ReadAsStringAsync();
+            string request = httpResponseMessage.RequestMessage.RequestUri.ToString();
+            throw new Exception($"{message}. Code:{httpResponseMessage.StatusCode} RequestUri:{request} Message:{responseContent}");
         }
 
         private class AuthToken

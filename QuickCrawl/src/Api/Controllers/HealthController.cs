@@ -26,10 +26,7 @@ namespace Api.Controllers
         public async Task<string> Get()
         {
             await HealthCheck.TestYelp(_apiClient);
-
             return "Ok";
         }
-
-
     }
 }

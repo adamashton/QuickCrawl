@@ -1,10 +1,9 @@
-﻿using System;
+﻿using Core;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Options;
 using Yelp;
-using Core;
 
 namespace Api
 {
@@ -13,9 +12,10 @@ namespace Api
         public static async Task TestYelp(ApiClient apiClient)
         {
             // Test Yelp Access
-
-            Location location = new Location(49.25943m, -123.06973m);
-            await apiClient.Search(location, 1000);
+            Coordinates location = new Coordinates(49.25943m, -123.06973m);
+            SearchResponse response = await apiClient.Search(location, 1000, new List<string> { "bars" });
+            if (response == null || response.businesses == null || !response.businesses.Any())
+                throw new Exception("Null or empty response from Yelp business search");
         }
     }
 }

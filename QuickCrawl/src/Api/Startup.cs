@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Yelp;
+using Crawl;
 
 namespace Api
 {
@@ -28,12 +29,24 @@ namespace Api
             // Add framework services.
             services.AddMvc();
             
+            AddConfiguration(services);
+
+            AddClasses(services);
+        }
+
+        private static void AddClasses(IServiceCollection services)
+        {
+            services.AddSingleton<ApiClient>();
+            services.AddTransient<BusinessFinder>();
+            services.AddTransient<QuickCrawlEngine>();
+        }
+
+        private void AddConfiguration(IServiceCollection services)
+        {
             services.Configure<AppSettings>(Configuration);
 
             var yelpConfigSection = Configuration.GetSection("yelp");
             services.Configure<YelpSettings>(yelpConfigSection);
-
-            services.AddSingleton<ApiClient>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
